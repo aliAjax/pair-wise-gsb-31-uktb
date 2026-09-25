@@ -17,6 +17,7 @@ ReSwap 是一个纯前端以物换物 Web 应用。用户可以本地模拟登�
 - 物品详情、物主资料、选择自己的物品发起交换。
 - 发布物品，支持本地 base64 图片上传、分类和成色选择。
 - 交换管理，区分我发起的和我收到的请求，支持同意、拒绝、完成。
+- 环形接力：选中他人物品后沿「想换取」关系寻找最多三方闭环，成环即锁定三件物品，三方各自确认/退出，全员确认后一起成交；有人退出则释放占用并保留失效历史。
 - 个人中心，编辑资料、上传头像、查看我发布的物品。
 - 主题切换、全局错误处理和 Vant 提示。
 
@@ -49,16 +50,16 @@ pnpm build
 
 ```text
 src/
-├── api/              # userApi.ts, itemApi.ts, exchangeApi.ts：本地数据 API 层
-├── stores/           # authStore.ts, itemStore.ts, exchangeStore.ts, themeStore.ts
-├── models/           # user.ts, item.ts, exchange.ts：独立数据模型
+├── api/              # userApi.ts, itemApi.ts, exchangeApi.ts, ringSwapApi.ts：本地数据 API 层
+├── stores/           # authStore.ts, itemStore.ts, exchangeStore.ts, ringSwapStore.ts, themeStore.ts
+├── models/           # user.ts, item.ts, exchange.ts, ringSwap.ts：独立数据模型
 ├── types/            # 共享类型补充
 ├── components/common/# 共享业务组件和 GlobalErrorBoundary
 ├── hooks/            # useAuth.ts, useLocalStorage.ts, useExchangeStats.ts
-├── pages/            # Home, ItemDetail, Publish, Exchanges, Profile
+├── pages/            # Home, ItemDetail, Publish, Exchanges, Rings, RingBuilder, Profile
 ├── router/           # index.ts + guards.ts
-├── utils/            # storage.ts, formatters.ts, validators.ts, message.ts, themeUtils.ts
-├── constants/        # item.ts, exchange.ts, themes.ts, messages.ts
+├── utils/            # storage.ts, ringGraph.ts, formatters.ts, validators.ts, message.ts, themeUtils.ts
+├── constants/        # item.ts, exchange.ts, ringSwap.ts, themes.ts, messages.ts
 ├── App.vue
 ├── main.ts
 └── styles.css
@@ -112,6 +113,24 @@ src/
 - `src/components/common/ExchangeCard.vue`
 - `src/pages/ItemDetail.vue`
 - `src/pages/Exchanges.vue`
+
+### RingStatus（环形接力）
+
+定义位置：`src/constants/ringSwap.ts`
+
+环形接力与双人交换分层独立，出现位置：
+
+- 模型：`src/models/ringSwap.ts`
+- 成环判断（纯函数）：`src/utils/ringGraph.ts`
+- 存储 key：`src/utils/storage.ts`（`reswap:ring-swaps`）
+- 本地数据 API：`src/api/ringSwapApi.ts`
+- 状态管理：`src/stores/ringSwapStore.ts`
+- 页面：`src/pages/RingBuilder.vue`（成环组建）、`src/pages/Rings.vue`（接力管理）
+- 组件：`src/components/common/RingSwapCard.vue`
+- 文案与格式化：`src/constants/messages.ts`、`src/utils/formatters.ts`
+- 路由与导航：`src/router/index.ts`、`src/router/guards.ts`、`src/App.vue`
+
+接力状态机：`pending`（各方确认中，物品锁定）→ `confirmed`（全员确认）→ `completed`（一起成交）；任意参与者在成交前退出则进入 `expired`，释放三件物品占用并保留历史。「想换取」关系复用双人交换请求（拒绝的请求除外）构成的有向边，沿 `我的物品 → 选中物品 → 第三方物品 → 我的物品` 查找三方环。
 
 ## 分层与高耦合约束
 

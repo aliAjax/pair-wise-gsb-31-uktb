@@ -17,6 +17,30 @@ const seedExchanges: Exchange[] = [
     created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
     updated_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
   },
+  {
+    // 环形接力演示意愿：拍立得想换设计书
+    id: 'exchange_seed_ring_1',
+    from_user_id: 'user_lin',
+    to_user_id: 'user_chen',
+    from_item_id: 'item_camera',
+    to_item_id: 'item_books',
+    status: ExchangeStatus.PENDING,
+    message: '拍立得想换你的产品设计书。',
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+  },
+  {
+    // 环形接力演示意愿：设计书想换露营椅，形成 chair → camera → books → chair
+    id: 'exchange_seed_ring_2',
+    from_user_id: 'user_chen',
+    to_user_id: 'user_me',
+    from_item_id: 'item_books',
+    to_item_id: 'item_chair',
+    status: ExchangeStatus.PENDING,
+    message: '设计书想换折叠露营椅。',
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+  },
 ];
 
 export const exchangeApi = {
@@ -50,6 +74,14 @@ export const exchangeApi = {
     if (!current) throw new Error('交换请求不存在');
     if (!EXCHANGE_ACTION_FLOW[current.status].includes(status)) {
       throw new Error('当前状态不允许该操作');
+    }
+    if (status === ExchangeStatus.ACCEPTED) {
+      // 锁定在环形接力中的物品不能再参与双人方案
+      const fromItem = await itemApi.detail(current.from_item_id);
+      const toItem = await itemApi.detail(current.to_item_id);
+      if (fromItem?.status === ItemStatus.LOCKED || toItem?.status === ItemStatus.LOCKED) {
+        throw new Error('相关物品已被接力方案锁定，暂不能同意');
+      }
     }
     const nextExchange: Exchange = { ...current, status, updated_at: new Date().toISOString() };
     if (status === ExchangeStatus.COMPLETED) {

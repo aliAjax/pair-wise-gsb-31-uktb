@@ -10,6 +10,8 @@ const router = createRouter({
     { path: '/item/:id', name: 'item-detail', component: () => import('@/pages/ItemDetail.vue') },
     { path: '/publish', name: 'publish', component: () => import('@/pages/Publish.vue') },
     { path: '/exchanges', name: 'exchanges', component: () => import('@/pages/Exchanges.vue') },
+    { path: '/rings', name: 'rings', component: () => import('@/pages/Rings.vue') },
+    { path: '/ring/create', name: 'ring-create', component: () => import('@/pages/RingBuilder.vue') },
     { path: '/profile', name: 'profile', component: () => import('@/pages/Profile.vue') },
     { path: '/:pathMatch(.*)*', redirect: '/home' },
   ],

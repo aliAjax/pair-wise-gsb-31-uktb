@@ -45,6 +45,13 @@
           <button class="primary-button" type="button" :disabled="item.status !== ItemStatus.AVAILABLE" @click="requestExchange">
             发起交换
           </button>
+          <RouterLink
+            v-if="item.status === ItemStatus.AVAILABLE"
+            class="secondary-button ring-entry"
+            :to="`/ring/create?item=${item.id}`"
+          >
+            发起三方环形接力
+          </RouterLink>
         </div>
         <button v-else-if="item.status === ItemStatus.AVAILABLE" class="secondary-button" type="button" @click="offlineItem">
           下架这件物品

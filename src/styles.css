@@ -560,6 +560,65 @@ textarea {
   gap: 14px;
 }
 
+.ring-chain {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ring-chain__node {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  border-radius: 7px;
+  background: color-mix(in oklch, var(--rs-primary), transparent 90%);
+  padding: 12px;
+}
+
+.ring-chain__node div {
+  display: grid;
+  gap: 3px;
+}
+
+.ring-chain__node strong {
+  font-size: 1rem;
+}
+
+.ring-chain__node small {
+  color: color-mix(in oklch, var(--rs-text), transparent 38%);
+}
+
+.ring-chain__order {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--rs-accent);
+  color: #fffaf0;
+  font-weight: 800;
+}
+
+.ring-card--focus {
+  border-color: var(--rs-accent);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--rs-accent), transparent 60%);
+}
+
+.ring-entry {
+  text-align: center;
+}
+
+.ring-form {
+  align-content: start;
+}
+
+.ring-preview h2 {
+  margin: 0;
+}
+
 .exchange-card {
   display: grid;
   gap: 14px;

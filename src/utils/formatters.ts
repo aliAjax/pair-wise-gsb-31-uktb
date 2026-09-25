@@ -2,13 +2,15 @@ import dayjs from 'dayjs';
 
 import { ExchangeStatus } from '@/constants/exchange';
 import { ItemCondition, ItemStatus } from '@/constants/item';
-import { STATUS_MESSAGE_MAP } from '@/constants/messages';
+import { RingStatus } from '@/constants/ringSwap';
+import { STATUS_MESSAGE_MAP, RING_STATUS_MESSAGE_MAP } from '@/constants/messages';
 
 export const formatDate = (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm');
 
 export const formatItemStatus = (status: ItemStatus) => {
   const map: Record<ItemStatus, string> = {
     [ItemStatus.AVAILABLE]: '可交换',
+    [ItemStatus.LOCKED]: '接力锁定中',
     [ItemStatus.EXCHANGED]: '已交换',
     [ItemStatus.OFFLINE]: '已下架',
   };
@@ -21,6 +23,16 @@ export const formatExchangeStatus = (status: ExchangeStatus) => {
     [ExchangeStatus.ACCEPTED]: '已同意',
     [ExchangeStatus.REJECTED]: '已拒绝',
     [ExchangeStatus.COMPLETED]: '已完成',
+  };
+  return map[status];
+};
+
+export const formatRingStatus = (status: RingStatus) => {
+  const map: Record<RingStatus, string> = {
+    [RingStatus.PENDING]: '待各方确认',
+    [RingStatus.CONFIRMED]: '全员已确认',
+    [RingStatus.COMPLETED]: '已成交',
+    [RingStatus.EXPIRED]: '已失效',
   };
   return map[status];
 };
@@ -42,11 +54,18 @@ export const formatCreditLevel = (score: number) => {
   return '需谨慎';
 };
 
-export const statusToneClass = (status: ItemStatus | ExchangeStatus) => {
+export const statusToneClass = (status: ItemStatus | ExchangeStatus | RingStatus) => {
   if (status === ItemStatus.AVAILABLE || status === ExchangeStatus.ACCEPTED) return 'status-good';
-  if (status === ItemStatus.OFFLINE || status === ExchangeStatus.REJECTED) return 'status-muted';
-  if (status === ItemStatus.EXCHANGED || status === ExchangeStatus.COMPLETED) return 'status-done';
+  if (status === ItemStatus.OFFLINE || status === ExchangeStatus.REJECTED || status === RingStatus.EXPIRED)
+    return 'status-muted';
+  if (status === ItemStatus.EXCHANGED || status === ExchangeStatus.COMPLETED || status === RingStatus.COMPLETED)
+    return 'status-done';
   return 'status-wait';
 };
 
-export const formatStatusMessage = (status: ItemStatus | ExchangeStatus) => STATUS_MESSAGE_MAP[status];
+export const formatStatusMessage = (status: ItemStatus | ExchangeStatus | RingStatus) => {
+  if ((Object.values(RingStatus) as string[]).includes(status)) {
+    return RING_STATUS_MESSAGE_MAP[status as RingStatus];
+  }
+  return STATUS_MESSAGE_MAP[status as ItemStatus | ExchangeStatus];
+};
