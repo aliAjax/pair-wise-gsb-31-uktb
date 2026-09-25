@@ -2,7 +2,11 @@ export enum ItemStatus {
   AVAILABLE = 'available',
   EXCHANGED = 'exchanged',
   OFFLINE = 'offline',
+  /** 已被环形接力方案锁定，成环期间不能参与其他交换 */
+  LOCKED = 'locked',
 }
+
+export const ITEM_LOCKED_SOURCE = 'ring-plan';
 
 export enum ItemCondition {
   NEW = 'new',
@@ -15,6 +19,7 @@ export const ITEM_STATUS_OPTIONS = [
   { label: '可交换', value: ItemStatus.AVAILABLE },
   { label: '已交换', value: ItemStatus.EXCHANGED },
   { label: '已下架', value: ItemStatus.OFFLINE },
+  { label: '环形锁定中', value: ItemStatus.LOCKED },
 ];
 
 export const ITEM_CONDITION_OPTIONS = [

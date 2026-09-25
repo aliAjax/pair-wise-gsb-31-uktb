@@ -8,6 +8,8 @@ import type { Item, ItemDraft } from '@/models/item';
 import { message } from '@/utils/message';
 import { validateItemDraft } from '@/utils/validators';
 
+import { useRingStore } from './ringStore';
+
 export const useItemStore = defineStore('items', {
   state: () => ({
     items: [] as Item[],
@@ -64,6 +66,11 @@ export const useItemStore = defineStore('items', {
       return item;
     },
     async offline(itemId: string) {
+      const lockedItemIds = useRingStore().lockedItemIds;
+      if (lockedItemIds.has(itemId)) {
+        message('物品处于环形接力锁定中，暂时不能下架', 'error');
+        return;
+      }
       await itemApi.setStatus(itemId, ItemStatus.OFFLINE);
       this.items = await itemApi.list();
       message('物品已下架', 'success');

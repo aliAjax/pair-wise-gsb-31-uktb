@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 
 import { ExchangeStatus } from '@/constants/exchange';
 import { ItemCondition, ItemStatus } from '@/constants/item';
+import { RingStatus } from '@/constants/ring';
 import { STATUS_MESSAGE_MAP } from '@/constants/messages';
 
 export const formatDate = (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm');
@@ -11,6 +12,7 @@ export const formatItemStatus = (status: ItemStatus) => {
     [ItemStatus.AVAILABLE]: '可交换',
     [ItemStatus.EXCHANGED]: '已交换',
     [ItemStatus.OFFLINE]: '已下架',
+    [ItemStatus.LOCKED]: '环形锁定中',
   };
   return map[status];
 };
@@ -21,6 +23,15 @@ export const formatExchangeStatus = (status: ExchangeStatus) => {
     [ExchangeStatus.ACCEPTED]: '已同意',
     [ExchangeStatus.REJECTED]: '已拒绝',
     [ExchangeStatus.COMPLETED]: '已完成',
+  };
+  return map[status];
+};
+
+export const formatRingStatus = (status: RingStatus) => {
+  const map: Record<RingStatus, string> = {
+    [RingStatus.LOCKED]: '待确认',
+    [RingStatus.COMPLETED]: '已成交',
+    [RingStatus.FAILED]: '已失效',
   };
   return map[status];
 };
@@ -42,11 +53,15 @@ export const formatCreditLevel = (score: number) => {
   return '需谨慎';
 };
 
-export const statusToneClass = (status: ItemStatus | ExchangeStatus) => {
+export const statusToneClass = (status: ItemStatus | ExchangeStatus | RingStatus) => {
+  if (status === ItemStatus.LOCKED || status === RingStatus.LOCKED) return 'status-lock';
+  if (status === RingStatus.FAILED) return 'status-muted';
+  if (status === RingStatus.COMPLETED) return 'status-done';
   if (status === ItemStatus.AVAILABLE || status === ExchangeStatus.ACCEPTED) return 'status-good';
   if (status === ItemStatus.OFFLINE || status === ExchangeStatus.REJECTED) return 'status-muted';
   if (status === ItemStatus.EXCHANGED || status === ExchangeStatus.COMPLETED) return 'status-done';
   return 'status-wait';
 };
 
-export const formatStatusMessage = (status: ItemStatus | ExchangeStatus) => STATUS_MESSAGE_MAP[status];
+export const formatStatusMessage = (status: ItemStatus | ExchangeStatus | RingStatus) =>
+  STATUS_MESSAGE_MAP[status];

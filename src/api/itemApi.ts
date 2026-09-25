@@ -92,6 +92,17 @@ export const itemApi = {
   },
 
   async setStatus(id: string, status: ItemStatus): Promise<Item> {
+    const current = await this.detail(id);
+    // 锁定中只允许环 API 的两个去向：释放回可交换、成交为已交换
+    if (
+      current &&
+      current.status === ItemStatus.LOCKED &&
+      status !== ItemStatus.LOCKED &&
+      status !== ItemStatus.EXCHANGED &&
+      status !== ItemStatus.AVAILABLE
+    ) {
+      throw new Error('物品处于环形接力锁定中，暂时不能下架');
+    }
     return this.update(id, { status });
   },
 };

@@ -46,9 +46,68 @@
             发起交换
           </button>
         </div>
-        <button v-else-if="item.status === ItemStatus.AVAILABLE" class="secondary-button" type="button" @click="offlineItem">
+
+        <div v-if="!isMine && item.status === ItemStatus.AVAILABLE" class="exchange-box ring-box">
+          <p class="ring-box__title">三方环形接力</p>
+          <p class="ring-box__hint">
+            两人直接换不拢时，选一件自己的物品，沿各方“想换取”关系找最多三方闭环；成环即锁定，三方确认后一起成交。
+          </p>
+          <label>
+            我拿出的物品
+            <select v-model="ringOfferItemId">
+              <option value="">选择一件我发布的可交换物品</option>
+              <option v-for="myItem in ownAvailableItems" :key="myItem.id" :value="myItem.id">
+                {{ myItem.title }}
+              </option>
+            </select>
+          </label>
+          <button class="secondary-button" type="button" :disabled="!ringOfferItemId" @click="searchRing">
+            查找三方闭环
+          </button>
+
+          <div v-if="ringSearched" class="ring-result">
+            <template v-if="ringCandidates.length">
+              <p class="ring-result__summary">找到 {{ ringCandidates.length }} 个可成环方案：</p>
+              <div
+                v-for="(candidate, candidateIndex) in ringCandidates"
+                :key="candidateIndex"
+                class="ring-result__option"
+                :class="{ selected: selectedRingIndex === candidateIndex }"
+              >
+                <ol>
+                  <li v-for="(leg, legIndex) in candidate" :key="legIndex">
+                    {{ userNickname(leg.user_id) }}：{{ itemTitle(leg.offer_item_id) }}
+                    <span class="ring-arrow">→</span>
+                    {{ itemTitle(leg.want_item_id) }}
+                  </li>
+                </ol>
+                <button
+                  class="primary-button"
+                  type="button"
+                  @click="selectedRingIndex = candidateIndex"
+                >
+                  {{ selectedRingIndex === candidateIndex ? '已选此环' : '选择此环' }}
+                </button>
+              </div>
+              <button
+                class="primary-button"
+                type="button"
+                :disabled="selectedRingIndex < 0"
+                @click="startRing"
+              >
+                发起接力并锁定三件物品
+              </button>
+            </template>
+            <p v-else class="ring-result__empty">{{ FORM_MESSAGES.ringNoCycle }}</p>
+          </div>
+        </div>
+
+        <button v-else-if="isMine && item.status === ItemStatus.AVAILABLE" class="secondary-button" type="button" @click="offlineItem">
           下架这件物品
         </button>
+        <p v-else-if="isMine && item.status === ItemStatus.LOCKED" class="ring-box__hint">
+          这件物品正在环形接力中锁定，需等待接力成交或有人退出。
+        </p>
       </article>
     </div>
   </section>
@@ -57,23 +116,28 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { RouterLink, useRoute } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 
 import EmptyState from '@/components/common/EmptyState.vue';
 import ItemImageGallery from '@/components/common/ItemImageGallery.vue';
 import UserBrief from '@/components/common/UserBrief.vue';
 import { ExchangeStatus } from '@/constants/exchange';
 import { ItemStatus } from '@/constants/item';
+import { FORM_MESSAGES } from '@/constants/messages';
+import type { RingChainLeg } from '@/models/ringPlan';
 import { useAuthStore } from '@/stores/authStore';
 import { useExchangeStore } from '@/stores/exchangeStore';
 import { useItemStore } from '@/stores/itemStore';
+import { useRingStore } from '@/stores/ringStore';
 import { formatCondition, formatDate, formatItemStatus, statusToneClass } from '@/utils/formatters';
 import { message } from '@/utils/message';
 
 const route = useRoute();
+const router = useRouter();
 const itemStore = useItemStore();
 const authStore = useAuthStore();
 const exchangeStore = useExchangeStore();
+const ringStore = useRingStore();
 
 const item = computed(() => itemStore.items.find((entry) => entry.id === route.params.id));
 const owner = computed(() => authStore.users.find((user) => user.id === item.value?.user_id));
@@ -83,6 +147,16 @@ const ownAvailableItems = computed(() =>
 );
 const selectedItemId = ref('');
 const messageText = ref('我想用这件闲置与你交换，可以沟通时间和地点。');
+
+const ringOfferItemId = ref('');
+const ringSearched = ref(false);
+const ringCandidates = ref<RingChainLeg[][]>([]);
+const selectedRingIndex = ref(-1);
+
+const itemTitle = (itemId: string) =>
+  itemStore.items.find((entry) => entry.id === itemId)?.title ?? '未知物品';
+const userNickname = (userId: string) =>
+  authStore.users.find((user) => user.id === userId)?.nickname ?? '未知用户';
 
 const requestExchange = async () => {
   if (!authStore.currentUser || !item.value || !owner.value) return;
@@ -99,6 +173,38 @@ const requestExchange = async () => {
     status: ExchangeStatus.PENDING,
     message: messageText.value,
   });
+};
+
+const searchRing = () => {
+  if (!authStore.currentUser || !item.value) return;
+  if (!ringOfferItemId.value) {
+    message(FORM_MESSAGES.ringNeedOwnItem, 'error');
+    return;
+  }
+  ringCandidates.value = ringStore.findRings(
+    authStore.currentUser.id,
+    ringOfferItemId.value,
+    item.value.id,
+  );
+  selectedRingIndex.value = ringCandidates.value.length ? 0 : -1;
+  ringSearched.value = true;
+  if (!ringCandidates.value.length) {
+    message(FORM_MESSAGES.ringNoCycle, 'error');
+  }
+};
+
+const startRing = async () => {
+  if (!authStore.currentUser || !item.value) return;
+  const candidate = ringCandidates.value[selectedRingIndex.value];
+  if (!candidate) return;
+  const plan = await ringStore.createRing({
+    initiator_user_id: authStore.currentUser.id,
+    legs: candidate,
+    message: messageText.value || '三方环形接力，等待大家确认。',
+  });
+  if (plan) {
+    await router.push('/rings');
+  }
 };
 
 const offlineItem = async () => {

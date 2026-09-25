@@ -285,6 +285,11 @@ main {
   color: #9b5c1c;
 }
 
+.status-lock {
+  background: color-mix(in oklch, #8a5cb8, transparent 80%);
+  color: #6f429b;
+}
+
 .status-muted {
   background: color-mix(in oklch, #5f6870, transparent 80%);
   color: color-mix(in oklch, var(--rs-text), transparent 20%);
@@ -635,6 +640,118 @@ textarea {
 
 .text-link {
   justify-self: start;
+}
+
+.ring-tip {
+  margin: 0 0 14px;
+  border-left: 3px solid var(--rs-accent);
+  border-radius: 4px;
+  background: color-mix(in oklch, var(--rs-primary), transparent 90%);
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: color-mix(in oklch, var(--rs-text), transparent 15%);
+}
+
+.ring-box {
+  border-style: dashed;
+}
+
+.ring-box__title {
+  margin: 0;
+  font-weight: 800;
+}
+
+.ring-box__hint {
+  margin: 0 0 6px;
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: color-mix(in oklch, var(--rs-text), transparent 28%);
+}
+
+.ring-result {
+  display: grid;
+  gap: 10px;
+}
+
+.ring-result__summary,
+.ring-result__empty {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.ring-result__option {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--rs-border);
+  border-radius: 7px;
+  padding: 10px 12px;
+}
+
+.ring-result__option.selected {
+  border-color: var(--rs-primary);
+  background: color-mix(in oklch, var(--rs-primary), transparent 92%);
+}
+
+.ring-result__option ol {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.ring-arrow {
+  margin: 0 4px;
+  color: var(--rs-accent);
+  font-weight: 800;
+}
+
+.ring-card__chain {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  counter-reset: ring-leg;
+}
+
+.ring-card__leg {
+  border-left: 3px solid var(--rs-accent);
+  border-radius: 4px;
+  background: color-mix(in oklch, var(--rs-primary), transparent 93%);
+  padding: 8px 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.ring-card__who {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.ring-card__confirm {
+  font-style: normal;
+  font-size: 0.76rem;
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: color-mix(in oklch, #bb7a35, transparent 80%);
+  color: #9b5c1c;
+}
+
+.ring-card__confirm.done {
+  background: color-mix(in oklch, #3f7c55, transparent 80%);
+  color: #2f7548;
+}
+
+.ring-card__reason {
+  margin: 0;
+  color: #9b5c1c;
+  font-size: 0.86rem;
 }
 
 @media (max-width: 760px) {

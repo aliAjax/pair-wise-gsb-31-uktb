@@ -15,8 +15,10 @@ ReSwap 是一个纯前端以物换物 Web 应用。用户可以本地模拟登�
 
 - 首页瀑布流浏览、分类筛选、关键词搜索。
 - 物品详情、物主资料、选择自己的物品发起交换。
+- **三方环形接力**：在他人物品详情选择自己的物品，沿各方“想换取”关系自动寻找最多三方的闭合链路；成环即把三件物品一起锁定，三方各自确认后一起成交，任一方退出则释放全部占用并将方案转为失效（历史保留）。
 - 发布物品，支持本地 base64 图片上传、分类和成色选择。
 - 交换管理，区分我发起的和我收到的请求，支持同意、拒绝、完成。
+- 接力管理页（/rings），区分待确认、与我相关、历史记录。
 - 个人中心，编辑资料、上传头像、查看我发布的物品。
 - 主题切换、全局错误处理和 Vant 提示。
 
@@ -49,16 +51,16 @@ pnpm build
 
 ```text
 src/
-├── api/              # userApi.ts, itemApi.ts, exchangeApi.ts：本地数据 API 层
-├── stores/           # authStore.ts, itemStore.ts, exchangeStore.ts, themeStore.ts
-├── models/           # user.ts, item.ts, exchange.ts：独立数据模型
+├── api/              # userApi.ts, itemApi.ts, exchangeApi.ts, ringApi.ts：本地数据 API 层
+├── stores/           # authStore.ts, itemStore.ts, exchangeStore.ts, ringStore.ts, themeStore.ts
+├── models/           # user.ts, item.ts, exchange.ts, ringPlan.ts：独立数据模型
 ├── types/            # 共享类型补充
-├── components/common/# 共享业务组件和 GlobalErrorBoundary
+├── components/common/# 共享业务组件（含 RingPlanCard）和 GlobalErrorBoundary
 ├── hooks/            # useAuth.ts, useLocalStorage.ts, useExchangeStats.ts
-├── pages/            # Home, ItemDetail, Publish, Exchanges, Profile
+├── pages/            # Home, ItemDetail, Publish, Exchanges, Rings, Profile
 ├── router/           # index.ts + guards.ts
-├── utils/            # storage.ts, formatters.ts, validators.ts, message.ts, themeUtils.ts
-├── constants/        # item.ts, exchange.ts, themes.ts, messages.ts
+├── utils/            # storage.ts, ringMatcher.ts, formatters.ts, validators.ts, message.ts, themeUtils.ts
+├── constants/        # item.ts, exchange.ts, ring.ts, themes.ts, messages.ts
 ├── App.vue
 ├── main.ts
 └── styles.css
@@ -69,7 +71,17 @@ src/
 - `utils/storage.ts` 统一封装 localStorage 和 IndexedDB。
 - 所有 `api/*Api.ts` 通过 `storage.ts` 读写数据，不在组件里直接写业务数据。
 - 存储层包含序列化、版本号、过期清理、存储 key 管理。
-- 首次启动会写入演示用户、物品和交换请求。
+- 首次启动会写入演示用户、物品和交换请求（含一条可直接成环的三方“想换取”链：露营椅 → 拍立得 → 设计书 → 露营椅）。
+
+## 三方环形接力
+
+双人互换之外的接力规则与分层：
+
+- **交换模型**：`src/models/ringPlan.ts` 的 `RingPlan` / `RingLeg` 独立定义；状态枚举 `RingStatus` 在 `src/constants/ring.ts`（LOCKED 待确认 / COMPLETED 已成交 / FAILED 已失效）。
+- **成环判断**：`src/utils/ringMatcher.ts` 是纯函数模块。待确认（pending）的双人交换请求被视为“想换取”有向边（`toWantEdges`）；`findTripleRings` 从发起人选中的他人物品出发，沿边最多走三方并校验能回到自己的物品，闭合条件为 `legs[i].want_item_id === legs[(i+1) % n].offer_item_id`；`isClosedRing` / `assertItemsLockable` 负责归属校验和占用校验。
+- **本地存储**：`src/api/ringApi.ts` 负责持久化。建环时先把三件物品一起置为 `ItemStatus.LOCKED`；锁定中的物品不能再发起/同意其他交换，也不能下架。三方各自 `confirm`，全员确认后 `settle` 把三件物品一起置为已交换并闭环对应双人请求；任一方 `quit` 则释放全部物品回可交换、方案转 FAILED 但记录保留。
+- **页面**：入口在 `src/pages/ItemDetail.vue`（选自己物品 → 查找闭环 → 预览环链 → 发起锁定），管理在 `src/pages/Rings.vue` 与 `src/components/common/RingPlanCard.vue`。
+- 演示路径：以默认用户“青禾”打开拍立得详情，选择自己的“可折叠露营椅”，即可查出三方闭环。
 
 ## 横切关注点
 
@@ -80,7 +92,7 @@ src/
 
 ### ItemStatus
 
-定义位置：`src/constants/item.ts`
+定义位置：`src/constants/item.ts`（含 AVAILABLE / EXCHANGED / OFFLINE / LOCKED）
 
 出现位置：
 
@@ -88,9 +100,12 @@ src/
 - `src/constants/messages.ts`
 - `src/api/itemApi.ts`
 - `src/api/exchangeApi.ts`
+- `src/api/ringApi.ts`
+- `src/utils/ringMatcher.ts`
 - `src/stores/itemStore.ts`
 - `src/router/guards.ts`
 - `src/utils/formatters.ts`
+- `src/types/index.ts`
 - `src/components/common/ItemCard.vue`
 - `src/pages/ItemDetail.vue`
 - `src/pages/Publish.vue`
@@ -105,13 +120,33 @@ src/
 - `src/models/exchange.ts`
 - `src/constants/messages.ts`
 - `src/api/exchangeApi.ts`
+- `src/api/ringApi.ts`
+- `src/utils/ringMatcher.ts`
 - `src/stores/exchangeStore.ts`
 - `src/router/guards.ts`
 - `src/utils/formatters.ts`
+- `src/types/index.ts`
 - `src/hooks/useExchangeStats.ts`
 - `src/components/common/ExchangeCard.vue`
 - `src/pages/ItemDetail.vue`
 - `src/pages/Exchanges.vue`
+
+### RingStatus
+
+定义位置：`src/constants/ring.ts`（LOCKED / COMPLETED / FAILED）
+
+出现位置：
+
+- `src/models/ringPlan.ts`
+- `src/constants/messages.ts`
+- `src/api/exchangeApi.ts`
+- `src/api/ringApi.ts`
+- `src/stores/ringStore.ts`
+- `src/router/guards.ts`
+- `src/utils/formatters.ts`
+- `src/types/index.ts`
+- `src/components/common/RingPlanCard.vue`
+- `src/pages/Rings.vue`
 
 ## 分层与高耦合约束
 
@@ -124,7 +159,7 @@ src/
 - `ItemStatus` 与 `ExchangeStatus` 被模型、API、store、组件、页面、router guards、formatters 多处引用。
 - `utils/storage.ts` 是存储入口，但全应用 API 和 store 都依赖它的 key 与数据结构。
 
-例如新增 `ItemStatus.BOOKED` 时，应至少修改：`src/constants/item.ts`、`src/models/item.ts`、`src/api/itemApi.ts`、`src/api/exchangeApi.ts`、`src/stores/itemStore.ts`、`src/router/guards.ts`、`src/utils/formatters.ts`、`src/constants/messages.ts`、`src/components/common/ItemCard.vue`、`src/pages/ItemDetail.vue`、`src/pages/Publish.vue` 等文件。
+例如新增 `ItemStatus.BOOKED` 时，应至少修改：`src/constants/item.ts`、`src/models/item.ts`、`src/api/itemApi.ts`、`src/api/exchangeApi.ts`、`src/api/ringApi.ts`、`src/stores/itemStore.ts`、`src/router/guards.ts`、`src/utils/formatters.ts`、`src/constants/messages.ts`、`src/components/common/ItemCard.vue`、`src/pages/ItemDetail.vue`、`src/pages/Publish.vue` 等文件。本次新增的 `ItemStatus.LOCKED` 即按此清单触达各层。
 
 ## 环境变量
 

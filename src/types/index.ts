@@ -1,5 +1,6 @@
 import type { ExchangeStatus } from '@/constants/exchange';
 import type { ItemCondition, ItemStatus } from '@/constants/item';
+import type { RingStatus } from '@/constants/ring';
 
 export interface Option<T extends string> {
   label: string;
@@ -15,6 +16,7 @@ export interface PersistedEnvelope<T> {
 export interface StatusFilter {
   item?: ItemStatus;
   exchange?: ExchangeStatus;
+  ring?: RingStatus;
   condition?: ItemCondition;
 }
 
